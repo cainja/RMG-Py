@@ -237,20 +237,24 @@ class QMReaction:
             
         labels = [lbl1, lbl2, lbl3]
         atomMatch = ((lbl1,),(lbl2,),(lbl3,))
-            
-        if (reactant.atoms[lbl1].symbol == 'H' and reactant.atoms[lbl3].symbol == 'C') or (reactant.atoms[lbl1].symbol == 'C' and reactant.atoms[lbl3].symbol == 'H'):
-            bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 2.3, 0.1)
-            bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 2.3, 0.1)
-        # elif (reactant.atoms[lbl1].symbol == 'H' and reactant.atoms[lbl3].symbol == 'O') or (reactant.atoms[lbl1].symbol == 'O' and reactant.atoms[lbl3].symbol == 'H'):
-        #     bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 2.2, 0.1)
-        #     bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 2.2, 0.1)
-        # elif reactant.atoms[lbl1].symbol == 'O' and reactant.atoms[lbl3].symbol == 'O':
-        #     bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 2.2, 0.1)
-        #     bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 2.2, 0.1)
-        else:
-            bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 2.7, 0.1)
-            bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 2.7, 0.1)
         
+        
+        bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 3.95, 0.1)
+        bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 3.95, 0.1)
+        #         
+        # if (reactant.atoms[lbl1].symbol == 'H' and reactant.atoms[lbl3].symbol == 'C') or (reactant.atoms[lbl1].symbol == 'C' and reactant.atoms[lbl3].symbol == 'H'):
+        #     bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 2.3, 0.1)
+        #     bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 2.3, 0.1)
+        # # elif (reactant.atoms[lbl1].symbol == 'H' and reactant.atoms[lbl3].symbol == 'O') or (reactant.atoms[lbl1].symbol == 'O' and reactant.atoms[lbl3].symbol == 'H'):
+        # #     bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 2.2, 0.1)
+        # #     bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 2.2, 0.1)
+        # # elif reactant.atoms[lbl1].symbol == 'O' and reactant.atoms[lbl3].symbol == 'O':
+        # #     bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 2.2, 0.1)
+        # #     bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 2.2, 0.1)
+        # else:
+        #     bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 2.7, 0.1)
+        #     bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 2.7, 0.1)
+        # 
         # sect = len(reactant.split()[1].atoms)
         rSect = []
         for atom in reactant.split()[0].atoms: rSect.append(atom.sortingLabel)
