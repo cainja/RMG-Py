@@ -347,8 +347,8 @@ class GaussianTS(QMReaction, Gaussian):
         Using the :class:`Geometry` object, write the input file
         for the `attmept`th attempt.
         """
-        numProc = '%nprocshared=' + '20' + '\n' # could be something that is set in the qmSettings
-        mem = '%mem=' + '800MB' + '\n' # could be something that is set in the qmSettings
+        numProc = '%nprocshared=' + '11' + '\n' # could be something that is set in the qmSettings
+        mem = '%mem=' + '2GB' + '\n' # could be something that is set in the qmSettings
         chk_file = '%chk=' + os.path.join(self.settings.fileStore, self.uniqueID) + '\n'
 
         if fromSddl:
@@ -367,7 +367,7 @@ class GaussianTS(QMReaction, Gaussian):
                         atomCount += 1
         elif fromNEB:
             output = ['', self.geometry.uniqueID, '' ]
-            output.append("{charge}   {mult}".format(charge=0, mult=self.geometry.multiplicity ))
+            output.append("{charge}   {mult}".format(charge=0, mult=(self.geometry.molecule.getRadicalCount() + 1) ))
             
             filePath = self.getFilePath('peak.xyz')
             assert os.path.exists(filePath)
@@ -421,7 +421,7 @@ class GaussianTS(QMReaction, Gaussian):
                 atomCount += 1
         elif fromInt:
             output = ['', self.geometry.uniqueID, '' ]
-            output.append("{charge}   {mult}".format(charge=0, mult=self.geometry.multiplicity ))
+            output.append("{charge}   {mult}".format(charge=0, mult=(self.geometry.molecule.getRadicalCount() + 1) ))
             
             atomsymbols, atomcoords = self.geometry.parseLOG(self.outputFilePath)
             atomCount = 0
@@ -498,8 +498,8 @@ class GaussianTS(QMReaction, Gaussian):
         from the checkpoint file created during the geometry search.
         """
         # Should be unaffected by bad checkpoint files since this should only run if Normal termination of previous runs
-        numProc = '%nprocshared=' + '20' + '\n' # could be something that is set in the qmSettings
-        mem = '%mem=' + '800MB' + '\n' # could be something that is set in the qmSettings
+        numProc = '%nprocshared=' + '11' + '\n' # could be something that is set in the qmSettings
+        mem = '%mem=' + '2GB' + '\n' # could be something that is set in the qmSettings
         chk_file = '%chk=' + os.path.join(self.settings.fileStore, self.uniqueID) + '\n'
         
         top_keys = self.keywords[4] + '\n\n'
@@ -990,21 +990,28 @@ class GaussianTSB3LYP(GaussianTS):
         qmMolecule = GaussianMolB3LYP(molecule, self.settings)
         return qmMolecule
     
-    def setCalculator(self, images):
+    def setCalculator(self, image, rank=0, parallel=False):
         """
         Set up the Gaussian calculator for the Atomic Simulation Environment
         """
         import ase
         from ase.calculators.gaussian import Gaussian
         
-        label=os.path.join(os.path.abspath(self.settings.fileStore), 'g09')
-        for image in images[1:len(images)-1]:
-            image.set_calculator(ase.calculators.gaussian.Gaussian(command=self.executablePath + '< ' + label + '.com' + ' > ' + label + '.log', label=label))
-            image.get_calculator().set(multiplicity=self.geometry.molecule.getRadicalCount() + 1, method='b3lyp', basis='6-31+g(d,p)')
+        # label=os.path.join(os.path.abspath(self.settings.fileStore), 'g09')
+        if parallel:
+            label=os.path.join(os.path.abspath(self.settings.fileStore), 'g09{0}'.format(rank))
+        else:
+            label=os.path.join(os.path.abspath(self.settings.fileStore), 'g09')
+        calc = ase.calculators.gaussian.Gaussian(command=self.executablePath + '< ' + label + '.com' + ' > ' + label + '.log', label=label)
+        calc.set(multiplicity=self.geometry.molecule.getRadicalCount() + 1, method='b3lyp', basis='6-31+g(d,p)')#, nprocshared=20)
+        image.set_calculator(calc)
+        # for image in images[1:len(images)-1]:
+        #     image.set_calculator(ase.calculators.gaussian.Gaussian(command=self.executablePath + '< ' + label + '.com' + ' > ' + label + '.log', label=label))
+        #     image.get_calculator().set(multiplicity=self.geometry.molecule.getRadicalCount() + 1, method='b3lyp', basis='6-31+g(d,p)', nprocshared=20)
     
     def writeGeomInputFile(self, freezeAtoms, otherGeom=None):
-        numProc = '%nprocshared=' + '20' + '\n' # could be something that is set in the qmSettings
-        mem = '%mem=' + '800MB' + '\n' # could be something that is set in the qmSettings
+        numProc = '%nprocshared=' + '11' + '\n' # could be something that is set in the qmSettings
+        mem = '%mem=' + '2GB' + '\n' # could be something that is set in the qmSettings
         
         output = [ '', self.geometry.uniqueIDlong, '', "{charge}   {mult}".format(charge=0, mult=(self.geometry.molecule.getRadicalCount() + 1) ) ]
         
@@ -1051,8 +1058,8 @@ class GaussianTSB3LYP(GaussianTS):
             gaussianFile.write('\n')
     
     def writeQST2InputFile(self, pGeom):
-        numProc = '%nprocshared=' + '20' + '\n' # could be something that is set in the qmSettings
-        mem = '%mem=' + '800MB' + '\n' # could be something that is set in the qmSettings
+        numProc = '%nprocshared=' + '11' + '\n' # could be something that is set in the qmSettings
+        mem = '%mem=' + '2GB' + '\n' # could be something that is set in the qmSettings
         # For now we don't do this, until seg faults are fixed on Discovery.
         # chk_file = '%chk=' + os.path.join(self.settings.fileStore, self.uniqueID) + '\n'
         output = ['', self.geometry.uniqueID, '' ]
@@ -1253,8 +1260,8 @@ class GaussianTSPM6(GaussianTS):
             gaussianFile.write('\n')
     
     def writeQST2InputFile(self, pGeom):
-        # numProc = '%nprocshared=' + '20' + '\n' # could be something that is set in the qmSettings
-        # mem = '%mem=' + '800MB' + '\n' # could be something that is set in the qmSettings
+        # numProc = '%nprocshared=' + '11' + '\n' # could be something that is set in the qmSettings
+        # mem = '%mem=' + '2GB' + '\n' # could be something that is set in the qmSettings
         # For now we don't do this, until seg faults are fixed on Discovery.
         # chk_file = '%chk=' + os.path.join(self.settings.fileStore, self.uniqueID) + '\n'
         output = ['', self.geometry.uniqueID, '' ]
