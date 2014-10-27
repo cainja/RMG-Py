@@ -703,15 +703,18 @@ class QMReaction:
             optimized = False
             pass
         
+        print "{0} the NEB was optimized".format(optimized)
         if optimized:
             lastNum = number_of_images-1
             if rank==0:
                 energies = dict(('{0}'.format(x),None) for x in range(number_of_images))
                 energies['{0}'.format(rank)] = neb.images[rank+1].get_potential_energy()
+                print "Got energy for rank {0}".format(rank)
                 world.comm.send(energies, dest=1, tag=27)
             else:
                 energies = world.comm.recv(source=rank-1, tag=27)
                 energies['{0}'.format(rank)] = neb.images[rank+1].get_potential_energy()
+                print "Got energy for rank {0}".format(rank)
                 if rank!=lastNum:
                     world.comm.send(energies, dest=rank+1, tag=27)
             
@@ -738,16 +741,31 @@ class QMReaction:
                     if item==maxE:
                         wantedImg=key
                 wantedRank = int(wantedImg)+1
+                print "Wanted rank is {0}".format(wantedRank)                
                 for proc in range(number_of_images):
                     if proc!=lastNum:
                         world.comm.send(wantedRank, dest=proc, tag=5) # last rank sends a signal to all the others
-                data = world.comm.recv(source=wantedRank, tag=6) # last rank waits here for the final go ahead
+                if wantedRank==lastNum: #in the case where rank is = lastNum
+                    energies['{0}'.format(rank)] = neb.images[rank+1].get_potential_energy()
+                    positions = neb.images[rank+1].get_positions()
+                    symbols = neb.images[rank+1].get_chemical_symbols()
+                    print "Got geometries for wanted rank {0}".format(wantedRank)
+                    with open(self.getFilePath('peak.xyz'), 'w') as cartesianFile:
+                        for i, position in enumerate(positions):
+                            cartesianFile.write("{0}  {1: .6f}  {2: .6f}  {3: .6f}\n".format(symbols[i], position[0], position[1], position[2]))
+                    data ='go'
+                    for proc in range(number_of_images):
+                        if proc!=wantedRank:
+                            world.comm.send(data, dest=proc, tag=6) # The rank with the highest peak sends a signal to all the others that it's done
+                else: #if wantedRank is not lastNum
+                    data = world.comm.recv(source=wantedRank, tag=6) # last rank waits here for the final go ahead
             else:
                 wantedRank = world.comm.recv(source=lastNum, tag=5) # All but the last rank gets a signal from the last rank
                 if wantedRank==rank:
                     energies['{0}'.format(rank)] = neb.images[rank+1].get_potential_energy()
                     positions = neb.images[rank+1].get_positions()
                     symbols = neb.images[rank+1].get_chemical_symbols()
+                    print "Got geometries for wanted rank {0}".format(wantedRank)
                     with open(self.getFilePath('peak.xyz'), 'w') as cartesianFile:
                         for i, position in enumerate(positions):
                             cartesianFile.write("{0}  {1: .6f}  {2: .6f}  {3: .6f}\n".format(symbols[i], position[0], position[1], position[2]))
@@ -757,6 +775,9 @@ class QMReaction:
                             world.comm.send(data, dest=proc, tag=6) # The rank with the highest peak sends a signal to all the others that it's done
                 else:
                     data = world.comm.recv(source=wantedRank, tag=6) # The rest go
+        else:
+            if rank==0:
+                print "Not optimized"
         #if optimized:
         #    lastNum = number_of_images-1
         #    if rank==0:
@@ -806,9 +827,7 @@ class QMReaction:
         #                    world.comm.send(data, dest=proc, tag=6) # The rank with the highest peak sends a signal to all the others that it's done
         #        else:
         #            data = world.comm.recv(source=wantedRank, tag=6) # The rest go
-        else:
-            if rank==0:
-                print "Not optimized"
+        
         
         if rank==0:
             print "Completed NEB calculation"
