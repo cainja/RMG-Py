@@ -229,14 +229,16 @@ class QMReaction:
             
         labels = [lbl1, lbl2, lbl3]
         atomMatch = ((lbl1,),(lbl2,),(lbl3,))
-            
+        
+        #bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 3.0, 0.1)
+        #bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 3.0, 0.1)    
         if reactant.atoms[lbl1].symbol == 'H' or reactant.atoms[lbl3].symbol == 'H':
             bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 2.3, 0.1)
             bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 2.3, 0.1)
         else:
             bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 2.7, 0.1)
             bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 2.7, 0.1)
-        
+       
         # sect = len(reactant.split()[1].atoms)
         rSect = []
         for atom in reactant.split()[0].atoms: rSect.append(atom.sortingLabel)
@@ -498,7 +500,7 @@ class QMReaction:
         import ase
         from ase.neb import NEB
         from ase.parallel import rank, size, world
-        from ase.optimize import BFGS
+        from ase.optimize import BFGS, FIRE
         from ase.io.trajectory import PickleTrajectory
         
         if rank==0:
@@ -682,14 +684,16 @@ class QMReaction:
             images.append(image)
         
         images.append(final)
-        neb = ase.neb.NEB(images, parallel=True) # climb=True
+        neb = ase.neb.NEB(images, climb=True, parallel=True) #(images,k,climb,parallel,world)
         
         # Interpolate the positions of the middle images linearly, then set calculators
         neb.interpolate()
         
         # self.setCalculator(images)
-        
-        optimizer = BFGS(neb)#, logfile=nebLog)
+        if neb.climb:
+            optimizer = FIRE(neb)
+        else:
+            optimizer = BFGS(neb) # (logfile=nebLog)
         
         if rank % number_of_images == 0:
             trajFile = os.path.join(self.settings.fileStore, 'neb%d.traj' % j)
@@ -697,7 +701,7 @@ class QMReaction:
             optimizer.attach(traj)
         optimized = True
         try:
-            optimizer.run(steps=20)
+            optimizer.run(steps=30)
         except Exception, e:
             print str(e)
             optimized = False
