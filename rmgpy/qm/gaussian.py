@@ -529,13 +529,15 @@ class GaussianTS(QMReaction, Gaussian):
         from ase import io, Atoms
         
         # Give ase the atom positions for each side of the reaction path
-        atomsymbols, atomcoords = self.geometry.parseLOG(self.outputFilePath)
+        # atomsymbols, atomcoords = self.geometry.parseLOG(self.outputFilePath)
+        atomsymbols, atomcoords = self.geometry.parseMOL(self.geometry.getRefinedMolFilePath())
         
         newImage = Atoms([getElement(i).number for i in atomsymbols])
         newImage.set_positions(atomcoords)
         initial = newImage.copy()
         
-        atomsymbols, atomcoords = self.geometry.parseLOG(pGeom.getFilePath(self.outputFileExtension))
+        # atomsymbols, atomcoords = self.geometry.parseLOG(pGeom.getFilePath(self.outputFileExtension))
+        atomsymbols, atomcoords = self.geometry.parseMOL(pGeom.getRefinedMolFilePath())
         
         newImage = Atoms([getElement(i).number for i in atomsymbols])
         newImage.set_positions(atomcoords)

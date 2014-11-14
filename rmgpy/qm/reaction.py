@@ -582,74 +582,74 @@ class QMReaction:
                 #     else:
                 #         return False, None, None, notes
             
-                if self.settings.software.lower() == 'gaussian':
-                    # all below needs to change
-                    if os.path.exists(self.getFilePath('.log.reactant.log')):
-                        print "Already have reactant"
-                        rightReactant = self.checkGeometry(self.getFilePath('.log.reactant.log'), self.geometry.molecule)
-                    else:
-                        print "Optimizing reactant geometry"
-                        self.writeGeomInputFile(freezeAtoms=labels)
-                        logFilePath = self.runDouble(self.inputFilePath)
-                        rightReactant = self.checkGeometry(logFilePath, self.geometry.molecule)
-                        shutil.copy(logFilePath, logFilePath+'.reactant.log')
-                    
-                    if os.path.exists(pGeom.getFilePath('.log.product.log')):
-                        print "Already have product"
-                        rightProduct = self.checkGeometry(pGeom.getFilePath('.log.product.log'), pGeom.molecule)
-                    else:
-                        print "Optimizing product geometry"
-                        self.writeGeomInputFile(freezeAtoms=labels, otherGeom=pGeom)
-                        logFilePath = self.runDouble(pGeom.getFilePath(self.inputFileExtension))
-                        rightProduct = self.checkGeometry(logFilePath, pGeom.molecule)
-                        shutil.copy(logFilePath, logFilePath+'.product.log')
-                    
-                    if not (rightReactant and rightProduct):
-                        if not rightReactant:
-                            print "Reactant geometry failure, see:" + self.settings.fileStore
-                            notes = notes + 'Reactant geometry failure\n'
-                        else:
-                            print "Reactant geometry success"
-                        
-                        if not rightProduct:
-                            print "Product geometry failure, see:" + self.settings.fileStore
-                            notes = notes + 'Product geometry failure\n'
-                        else:
-                            print "Product geometry success"
-                        # Don't run if the geometries have optimized to another geometry
-                        return False, None, None, notes
-                elif self.settings.software.lower() == 'mopac':
-                    print "Optimizing reactant geometry"
-                    self.writeGeomInputFile(freezeAtoms=labels)
-                    logFilePath = self.runDouble(self.inputFilePath)
-                    shutil.copy(logFilePath, logFilePath+'.reactant.out')
-                    
-                    print "Optimizing product geometry"
-                    self.writeGeomInputFile(freezeAtoms=labels, otherGeom=pGeom)
-                    logFilePath = self.runDouble(pGeom.getFilePath(self.inputFileExtension))
-                    shutil.copy(logFilePath, logFilePath+'.product.out')
-                    
-                    
-                    # print "Product geometry referencing reactant"
-                    # self.writeReferenceFile(freezeAtoms=labels)#inputFilePath, molFilePathForCalc, geometry, attempt, outputFile=None)
-                    # self.writeGeoRefInputFile(pGeom, freezeAtoms=labels, otherSide=True)#inputFilePath, molFilePathForCalc, refFilePath, geometry)
-                    # logFilePath = self.runDouble(pGeom.getFilePath(self.inputFileExtension))
-                    # shutil.copy(logFilePath, logFilePath+'.ref1.out')
-                    #     
-                    # if not os.path.exists(pGeom.getFilePath('.arc')):
-                    #     notes = notes + 'product .arc file does not exits\n'
-                    #     return False, None, None, notes
-                    # 
-                    # # Reactant that references the product geometry
-                    # print "Reactant referencing product on slope"
-                    # self.writeReferenceFile(freezeAtoms=labels, otherGeom=pGeom)
-                    # self.writeGeoRefInputFile(pGeom, freezeAtoms=labels)
-                    # logFilePath = self.runDouble(self.inputFilePath)
-                    # shutil.copy(logFilePath, logFilePath+'.ref2.out')
-                    # 
-                    # if not os.path.exists(self.getFilePath('.arc')):
-                    #     notes = notes + 'reactant .arc file does not exits\n'
-                    #     return False, None, None, notes
+                # if self.settings.software.lower() == 'gaussian':
+                #     # all below needs to change
+                #     if os.path.exists(self.getFilePath('.log.reactant.log')):
+                #         print "Already have reactant"
+                #         rightReactant = self.checkGeometry(self.getFilePath('.log.reactant.log'), self.geometry.molecule)
+                #     else:
+                #         print "Optimizing reactant geometry"
+                #         self.writeGeomInputFile(freezeAtoms=labels)
+                #         logFilePath = self.runDouble(self.inputFilePath)
+                #         rightReactant = self.checkGeometry(logFilePath, self.geometry.molecule)
+                #         shutil.copy(logFilePath, logFilePath+'.reactant.log')
+                #     
+                #     if os.path.exists(pGeom.getFilePath('.log.product.log')):
+                #         print "Already have product"
+                #         rightProduct = self.checkGeometry(pGeom.getFilePath('.log.product.log'), pGeom.molecule)
+                #     else:
+                #         print "Optimizing product geometry"
+                #         self.writeGeomInputFile(freezeAtoms=labels, otherGeom=pGeom)
+                #         logFilePath = self.runDouble(pGeom.getFilePath(self.inputFileExtension))
+                #         rightProduct = self.checkGeometry(logFilePath, pGeom.molecule)
+                #         shutil.copy(logFilePath, logFilePath+'.product.log')
+                #     
+                #     if not (rightReactant and rightProduct):
+                #         if not rightReactant:
+                #             print "Reactant geometry failure, see:" + self.settings.fileStore
+                #             notes = notes + 'Reactant geometry failure\n'
+                #         else:
+                #             print "Reactant geometry success"
+                #         
+                #         if not rightProduct:
+                #             print "Product geometry failure, see:" + self.settings.fileStore
+                #             notes = notes + 'Product geometry failure\n'
+                #         else:
+                #             print "Product geometry success"
+                #         # Don't run if the geometries have optimized to another geometry
+                #         return False, None, None, notes
+                # elif self.settings.software.lower() == 'mopac':
+                #     print "Optimizing reactant geometry"
+                #     self.writeGeomInputFile(freezeAtoms=labels)
+                #     logFilePath = self.runDouble(self.inputFilePath)
+                #     shutil.copy(logFilePath, logFilePath+'.reactant.out')
+                #     
+                #     print "Optimizing product geometry"
+                #     self.writeGeomInputFile(freezeAtoms=labels, otherGeom=pGeom)
+                #     logFilePath = self.runDouble(pGeom.getFilePath(self.inputFileExtension))
+                #     shutil.copy(logFilePath, logFilePath+'.product.out')
+                #     
+                #     
+                #     # print "Product geometry referencing reactant"
+                #     # self.writeReferenceFile(freezeAtoms=labels)#inputFilePath, molFilePathForCalc, geometry, attempt, outputFile=None)
+                #     # self.writeGeoRefInputFile(pGeom, freezeAtoms=labels, otherSide=True)#inputFilePath, molFilePathForCalc, refFilePath, geometry)
+                #     # logFilePath = self.runDouble(pGeom.getFilePath(self.inputFileExtension))
+                #     # shutil.copy(logFilePath, logFilePath+'.ref1.out')
+                #     #     
+                #     # if not os.path.exists(pGeom.getFilePath('.arc')):
+                #     #     notes = notes + 'product .arc file does not exits\n'
+                #     #     return False, None, None, notes
+                #     # 
+                #     # # Reactant that references the product geometry
+                #     # print "Reactant referencing product on slope"
+                #     # self.writeReferenceFile(freezeAtoms=labels, otherGeom=pGeom)
+                #     # self.writeGeoRefInputFile(pGeom, freezeAtoms=labels)
+                #     # logFilePath = self.runDouble(self.inputFilePath)
+                #     # shutil.copy(logFilePath, logFilePath+'.ref2.out')
+                #     # 
+                #     # if not os.path.exists(self.getFilePath('.arc')):
+                #     #     notes = notes + 'reactant .arc file does not exits\n'
+                #     #     return False, None, None, notes
                 data={'self': self, 'pGeom': pGeom}
                 for proc in range(size):
                     if proc!=0:
