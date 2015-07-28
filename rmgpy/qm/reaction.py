@@ -230,14 +230,14 @@ class QMReaction:
         labels = [lbl1, lbl2, lbl3]
         atomMatch = ((lbl1,),(lbl2,),(lbl3,))
         
-        #bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 3.0, 0.1)
-        #bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 3.0, 0.1)    
-        if reactant.atoms[lbl1].symbol == 'H' or reactant.atoms[lbl3].symbol == 'H':
-            bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 2.3, 0.1)
-            bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 2.3, 0.1)
-        else:
-            bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 2.7, 0.1)
-            bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 2.7, 0.1)
+        bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 3.95, 0.1)
+        bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 3.95, 0.1)    
+        #if reactant.atoms[lbl1].symbol == 'H' or reactant.atoms[lbl3].symbol == 'H':
+        #    bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 2.3, 0.1)
+        #    bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 2.3, 0.1)
+        #else:
+        #    bm1 = fixMatrix(bm1, lbl1, lbl2, lbl3, 2.7, 0.1)
+        #    bm2 = fixMatrix(bm2, lbl3, lbl2, lbl1, 2.7, 0.1)
        
         # sect = len(reactant.split()[1].atoms)
         rSect = []
@@ -684,7 +684,7 @@ class QMReaction:
             images.append(image)
         
         images.append(final)
-        neb = ase.neb.NEB(images, climb=True, parallel=True) #(images,k,climb,parallel,world)
+        neb = ase.neb.NEB(images, climb=False, parallel=True) #(images,k,climb,parallel,world)
         
         # Interpolate the positions of the middle images linearly, then set calculators
         neb.interpolate()
@@ -701,7 +701,7 @@ class QMReaction:
             optimizer.attach(traj)
         optimized = True
         try:
-            optimizer.run(steps=30)
+            optimizer.run(steps=50)
         except Exception, e:
             print str(e)
             optimized = False
@@ -832,8 +832,7 @@ class QMReaction:
         #        else:
         #            data = world.comm.recv(source=wantedRank, tag=6) # The rest go
         
-        
-        if rank==0:
+        if optimized and rank==0:
             print "Completed NEB calculation"
             
             print "Optimizing TS once"
