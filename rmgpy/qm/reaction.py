@@ -678,11 +678,11 @@ class QMReaction:
             logging.info("Transition state geometry already exists.")
             return True, "Already done!"
 
-        reactant, product = self.setupMolecules()
+        reactant, product = self.setupMolecules(doubleEnded=True)
 
-        tsRDMol, tsBM, self.reactantGeom = self.generateBoundsMatrix(reactant)
+        tsRDMol, tsBM, self.tsGeom = self.generateBoundsMatrix(reactant)
 
-        self.reactantGeom.uniqueID = self.uniqueID
+        self.tsGeom.uniqueID = self.uniqueID
 
         labels, atomMatch = self.getLabels(reactant)
         tsBM = self.editMatrix(reactant, tsBM, labels)
@@ -700,22 +700,10 @@ class QMReaction:
                 if tsBM[j,i] > tsBM[i,j]:
                         print "BOUNDS MATRIX FLAWED {0}>{1}".format(tsBM[j,i], tsBM[i,j])
 
-        self.reactantGeom.rd_embed(tsRDMol, distGeomAttempts, bm=tsBM, match=atomMatch)
-        atomSymbols, atomCoords = self.reactantGeom.parseMOL(self.reactantGeom.getRefinedMolFilePath())
-
-        d12sq = (atomCoords[labels[0]]-atomCoords[labels[1]])**2
-        d23sq = (atomCoords[labels[1]]-atomCoords[labels[2]])**2
-        d13sq = (atomCoords[labels[0]]-atomCoords[labels[2]])**2
-        d12 = math.sqrt(d12sq.sum())
-        d23 = math.sqrt(d23sq.sum())
-        d13 = math.sqrt(d13sq.sum())
-
-        with open(os.path.join(self.fileStore, 'rdkitDists.txt'), 'w') as distFile:
-            distFile.write('d12: {0:.6f}, d13: {1:.6f}, d23: {2:.6f}'.format(d12, d13, d23))
+        self.tsGeom.rd_embed(tsRDMol, distGeomAttempts, bm=tsBM, match=atomMatch)
+        tsAtomSymbols, tsAtomCoords = self.tsGeom.parseMOL(self.tsGeom.getRefinedMolFilePath())
 
         ''' Double Ended Set-up '''
-
-        reactant, product = self.setupMolecules(doubleEnded=True)
 
         rRDMol, rBM, self.reactantGeom = self.generateBoundsMatrix(reactant)
         pRDMol, pBM, self.productGeom = self.generateBoundsMatrix(product)
@@ -734,34 +722,39 @@ class QMReaction:
             return False, None, None, notes
 
         atoms = len(reactant.atoms)
-        distGeomAttempts = 15*(atoms-3) # number of conformers embedded from the bounds matrix
+        distGeomAttempts = 15*(atoms-3) ''' number of conformers embedded from the bounds matrix '''
 
-        rdmol, minEid = self.reactantGeom.rd_embed(rRDMol, distGeomAttempts, bm=rBM, match=atomMatch)
-        if not rdmol:
-            notes = notes + "RDKit failed all attempts to embed"
-            return False, None, None, notes
-        rRDMol = rdkit.Chem.MolFromMolFile(self.reactantGeom.getCrudeMolFilePath(), removeHs=False)
-        # Make product pRDMol a copy of the reactant rRDMol geometry
+        #rdmol, minEid = self.reactantGeom.rd_embed(rRDMol, distGeomAttempts, bm=rBM, match=atomMatch)
         for atom in reactant.atoms:
             i = atom.sortingLabel
-            pRDMol.GetConformer(0).SetAtomPosition(i, rRDMol.GetConformer(0).GetAtomPosition(i))
+            rRDMol.GetConformer(0).SetAtomPosition(i, tsRDMol.GetConformer(0).GetAtomPosition(i))
+            pRDMol.GetConformer(0).SetAtomPosition(i, tsRDMol.GetConformer(0).GetAtomPosition(i))
 
-        # don't re-embed the product, just optimize at UFF, constrained with the correct bounds matrix
+        #if not rdmol:
+        #    notes = notes + "RDKit failed all attempts to embed"
+        #    return False, None, None, notes
+        # rRDMol = rdkit.Chem.MolFromMolFile(self.reactantGeom.getCrudeMolFilePath(), removeHs=False)
+        # Make product pRDMol a copy of the reactant rRDMol geometry
+
+        ''' don't re-embed the reactant or product, just copy geometry from TS
+         then optimize at UFF, constrained with the appropriate bounds matrix '''
+        rRDMol, minEid = self.productGeom.optimize(rRDMol, boundsMatrix=rBM, atomMatch=atomMatch)
+        self.reactantGeom.writeMolFile(rRDMol, self.reactantGeom.getRefinedMolFilePath(), minEid)
         pRDMol, minEid = self.productGeom.optimize(pRDMol, boundsMatrix=pBM, atomMatch=atomMatch)
         self.productGeom.writeMolFile(pRDMol, self.productGeom.getRefinedMolFilePath(), minEid)
 
-        if os.path.exists(self.outputFilePath):
-            logging.info("File {0} already exists.".format(self.outputFilePath))
-            # I'm not sure why that should be a problem, but we used to do nothin in this case
-            notes = notes + 'Already have an output, checking the IRC\n'
-            rightTS = self.verifyIRCOutputFile()
-            if rightTS:
-                self.writeRxnOutputFile(labels)
-                return True, notes#True, self.geometry, labels, notes
-            else:
-                return False, notes#False, None, None, notes
+        # if os.path.exists(self.outputFilePath):
+        #     logging.info("File {0} already exists.".format(self.outputFilePath))
+        ''' I'm not sure why that should be a problem, but we used to do nothin in this case '''
+        #     notes = notes + 'Already have an output, checking the IRC\n'
+        #     rightTS = self.verifyIRCOutputFile()
+        #     if rightTS:
+        #         self.writeRxnOutputFile(labels)
+        #         return True, notes#True, self.geometry, labels, notes
+        #     else:
+        #         return False, notes#False, None, None, notes
 
-        check, notes = self.conductDoubleEnded(notes, NEB=neb, labels=labels)
+        check, notes = self.conductQST3(notes, tsAtomSymbols, tsAtomCoords, labels=labels)
         if check:
             # Optimize the TS
             check, notes =  self.tsSearch(notes, labels, fromDoubleEnded=True)

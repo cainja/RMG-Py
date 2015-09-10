@@ -435,10 +435,11 @@ class GaussianTS(QMReaction, Gaussian):
     otherKeywords = [
                      "irc=(calcall,report=read) freq geom=allcheck guess=check nosymm",
                      "opt=(modredundant,MaxCycles=",
-                     "opt=(qst2,calcall,noeigentest,MaxCycles=",
+                     "opt=(qst2,calcfc,noeigentest,MaxCycles=",
+                     "opt=(qst3,calcfc,noeigentest,MaxCycles=",
                      ]
 
-    def inputFileKeywords(self, attempt, irc=False, modRed=None, qst2=None):
+    def inputFileKeywords(self, attempt, irc=False, modRed=None, qst2=None, qst3=None):
         """
         Return the top keywords for attempt number `attempt`.
 
@@ -452,6 +453,9 @@ class GaussianTS(QMReaction, Gaussian):
         elif qst2:
             optionsKeys = self.otherKeywords[2]
             optionsKeys = optionsKeys + "{N}) nosymm".format(N=max(100,qst2*10))
+        elif qst3:
+            optionsKeys = self.otherKeywords[3]
+            optionsKeys = optionsKeys + "{N}) nosymm".format(N=max(100,qst3*10))
         else:
             optionsKeys = self.keywords[attempt-1]
 
@@ -587,13 +591,14 @@ class GaussianTS(QMReaction, Gaussian):
         top_keys = self.inputFileKeywords(0, qst2=atomCount)
         self.writeInputFile(output, top_keys=top_keys, numProcShared=40, memory='10GB')
 
-    def createQST3InputFile(self):
+    def createQST3InputFile(self, tsAtomSymbols, tsAtomCoords):
         # For now we don't do this, until seg faults are fixed on Discovery.
         # chk_file = '%chk=' + os.path.join(self.settings.fileStore, self.uniqueID) + '\n'
         output = ['', self.reactantGeom.uniqueID, '' ]
         output.append("{charge}   {mult}".format(charge=0, mult=(self.geometry.molecule.getRadicalCount() + 1) ))
 
-        atomsymbols, atomcoords = self.reactantGeom.parseLOG(self.reactantGeom.getFilePath(self.outputFileExtension))
+        # atomsymbols, atomcoords = self.reactantGeom.parseLOG(self.reactantGeom.getFilePath(self.outputFileExtension))
+        atomsymbols, atomcoords = self.reactantGeom.parseMOL(self.reactantGeom.getRefinedMolFilePath())
         output, atomCount = self.geomToString(atomsymbols, atomcoords, outputString=output)
 
         assert atomCount == len(self.reactantGeom.molecule.atoms)
@@ -603,14 +608,25 @@ class GaussianTS(QMReaction, Gaussian):
         output.append('')
         output.append("{charge}   {mult}".format(charge=0, mult=(self.productGeom.molecule.getRadicalCount() + 1) ))
 
-        atomsymbols, atomcoords = self.productGeom.parseLOG(self.productGeom.getFilePath(self.outputFileExtension))
+        atomsymbols, atomcoords = self.productGeom.parseMOL(self.productGeom.getRefinedMolFilePath())
         output, atomCount = self.geomToString(atomsymbols, atomcoords, outputString=output)
+
+        assert atomCount == len(self.reactantGeom.molecule.atoms)
+
+        ''' write the direct guess Geometry '''
+        output.append('')
+        output.append(self.tsGeom.uniqueIDlong)
+        output.append('')
+        ''' We use the reactant multiplicity for now '''
+        output.append("{charge}   {mult}".format(charge=0, mult=(self.geometry.molecule.getRadicalCount() + 1) ))
+
+        output, atomCount = self.geomToString(tsAtomSymbols, tsAtomCoords, outputString=output)
 
         assert atomCount == len(self.reactantGeom.molecule.atoms)
 
         output.append('')
         top_keys = self.inputFileKeywords(0, qst3=atomCount)
-        self.writeInputFile(output, top_keys=top_keys, numProcShared=40, memory='10GB')
+        self.writeInputFile(output, top_keys=top_keys, numProcShared=40, memory='2GB')
 
     def optEstimate(self, labels):
         """
@@ -804,10 +820,12 @@ class GaussianTS(QMReaction, Gaussian):
 
             if not qst2:
                 notes = notes + 'QST3 needed, see {0}\n'.format(self.settings.fileStore)
-                self.createQST3InputFile()
-                qst3, logFilePath = self.runQST3()
-                shutil.copy(logFilePath, logFilePath+'.QST3.log')
                 return notes
+
+    def conductQST3(self, notes, tsAtomSymbols, tsAtomCoords, labels=None):
+        self.createQST3InputFile(tsAtomSymbols, tsAtomCoords)
+        qst3, logFilePath = self.runQST3()
+        shutil.copy(logFilePath, logFilePath+'.QST3.log')
 
     def verifyOutputFile(self):
         """
