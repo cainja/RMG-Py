@@ -2,6 +2,7 @@ import os
 import re
 import external.cclib as cclib
 import logging
+import shutil
 import re
 import math
 import numpy
@@ -486,9 +487,12 @@ class GaussianTS(QMReaction, Gaussian):
         output.append("{charge}   {mult}".format(charge=0, mult=self.reactantGeom.molecule.multiplicity ))
 
         if fromDoubleEnded:
-            xyzFile = self.getFilePath('.xyz')
-            assert os.path.exists(xyzFile)
-            atomsymbols, atomcoords = self.reactantGeom.parseXYZ(xyzFile)
+            outputFilePath = self.outputFilePath
+            assert os.path.exists(outputFilePath)
+            atomsymbols, atomcoords = self.reactantGeom.parseLOG(outputFilePath)
+            # xyzFile = self.getFilePath('.xyz')
+            # assert os.path.exists(xyzFile)
+            # atomsymbols, atomcoords = self.reactantGeom.parseXYZ(xyzFile)
         elif fromInt or attempt > 2:
             # Until checkpointing is fixed, rewrite the whole output
             assert os.path.exists(self.outputFilePath)
@@ -508,7 +512,7 @@ class GaussianTS(QMReaction, Gaussian):
         assert atomCount == len(self.reactantGeom.molecule.atoms)
 
         output.append('')
-        self.writeInputFile(output, attempt, numProcShared=40, memory='10GB', checkPoint=True)
+        self.writeInputFile(output, attempt, numProcShared=20, memory='2GB', checkPoint=True)
 
     def createIRCFile(self):
         """
@@ -595,7 +599,7 @@ class GaussianTS(QMReaction, Gaussian):
         # For now we don't do this, until seg faults are fixed on Discovery.
         # chk_file = '%chk=' + os.path.join(self.settings.fileStore, self.uniqueID) + '\n'
         output = ['', self.reactantGeom.uniqueID, '' ]
-        output.append("{charge}   {mult}".format(charge=0, mult=(self.geometry.molecule.getRadicalCount() + 1) ))
+        output.append("{charge}   {mult}".format(charge=0, mult=(self.reactantGeom.molecule.getRadicalCount() + 1) ))
 
         # atomsymbols, atomcoords = self.reactantGeom.parseLOG(self.reactantGeom.getFilePath(self.outputFileExtension))
         atomsymbols, atomcoords = self.reactantGeom.parseMOL(self.reactantGeom.getRefinedMolFilePath())
@@ -618,7 +622,7 @@ class GaussianTS(QMReaction, Gaussian):
         output.append(self.tsGeom.uniqueIDlong)
         output.append('')
         ''' We use the reactant multiplicity for now '''
-        output.append("{charge}   {mult}".format(charge=0, mult=(self.geometry.molecule.getRadicalCount() + 1) ))
+        output.append("{charge}   {mult}".format(charge=0, mult=(self.tsGeom.molecule.getRadicalCount() + 1) ))
 
         output, atomCount = self.geomToString(tsAtomSymbols, tsAtomCoords, outputString=output)
 
@@ -626,7 +630,7 @@ class GaussianTS(QMReaction, Gaussian):
 
         output.append('')
         top_keys = self.inputFileKeywords(0, qst3=atomCount)
-        self.writeInputFile(output, top_keys=top_keys, numProcShared=40, memory='2GB')
+        self.writeInputFile(output, top_keys=top_keys, numProcShared=20, memory='2GB')
 
     def optEstimate(self, labels):
         """
@@ -643,8 +647,8 @@ class GaussianTS(QMReaction, Gaussian):
             output = ['', self.uniqueID, '' ]
             output.append("{charge}   {mult}".format(charge=0, mult=self.reactantGeom.molecule.multiplicity ))
 
-            # molfile = self.reactantGeom.getRefinedMolFilePath()
-            molfile = self.reactantGeom.getCrudeMolFilePath()
+            molfile = self.reactantGeom.getRefinedMolFilePath()
+            # molfile = self.reactantGeom.getCrudeMolFilePath()
 
             assert os.path.exists(molfile)
             atomsymbols, atomcoords = self.reactantGeom.parseMOL(molfile)
@@ -825,7 +829,9 @@ class GaussianTS(QMReaction, Gaussian):
     def conductQST3(self, notes, tsAtomSymbols, tsAtomCoords, labels=None):
         self.createQST3InputFile(tsAtomSymbols, tsAtomCoords)
         qst3, logFilePath = self.runQST3()
-        shutil.copy(logFilePath, logFilePath+'.QST3.log')
+        shutil.copy(logFilePath, logFilePath.split('.')[0]+'.QST3.log')
+
+        return qst3, notes
 
     def verifyOutputFile(self):
         """
@@ -1054,7 +1060,7 @@ class GaussianTS(QMReaction, Gaussian):
             ircParse = cclib.parser.Gaussian(self.ircOutputFilePath)
             ircParse.logger.setLevel(logging.ERROR) #cf. http://cclib.sourceforge.net/wiki/index.php/Using_cclib#Additional_information
             ircParse = ircParse.parse()
-            molfile = self.getFilePath('.crude.mol')
+            molfile = self.tsGeom.getFilePath('.crude.mol')
             atomline = re.compile('\s*([\- ][0-9.]+\s+[\-0-9.]+\s+[\-0-9.]+)\s+([A-Za-z]+)')
 
             atomCount = 0

@@ -36,13 +36,13 @@ from rmgpy.qm.molecule import QMMolecule
 from rmgpy.qm.reaction import QMReaction
 import rmgpy.qm.mopac
 import rmgpy.qm.gaussian
-import rmgpy.qm.nwchem
+# import rmgpy.qm.nwchem
 from rmgpy.data.thermo import ThermoLibrary
 
 class QMSettings():
     """
     A minimal class to store settings related to quantum mechanics calculations.
-    
+
     =================== ======================= ====================================
     Attribute           Type                    Description
     =================== ======================= ====================================
@@ -53,7 +53,7 @@ class QMSettings():
     `onlyCyclics`       ``bool``                ``True`` if to run QM only on ringed species
     `maxRadicalNumber`  ``int``                 Radicals larger than this are saturated before applying HBI
     =================== ======================= ====================================
-    
+
     """
     def __init__(self,
                  software = None,
@@ -75,10 +75,10 @@ class QMSettings():
             self.scratchDirectory = None
         self.onlyCyclics = onlyCyclics
         self.maxRadicalNumber = maxRadicalNumber
-        
+
         RMGpy_path = os.getenv('RMGpy') or os.path.normpath(os.path.join(rmgpy.getPath(),'..'))
         self.RMG_bin_path = os.path.join(RMGpy_path, 'bin')
-    
+
     def checkAllSet(self):
         """
         Check that all the required settings are set.
@@ -95,8 +95,8 @@ class QMSettings():
 
 class QMCalculator():
     """
-    A Quantum Mechanics calculator object, to store settings. 
-    
+    A Quantum Mechanics calculator object, to store settings.
+
     The attributes are:
 
     =================== ======================= ====================================
@@ -107,7 +107,7 @@ class QMCalculator():
     =================== ======================= ====================================
 
     """
-    
+
     def __init__(self,
                  software = None,
                  method = 'pm3',
@@ -116,7 +116,7 @@ class QMCalculator():
                  onlyCyclics = True,
                  maxRadicalNumber = 0,
                  ):
-                 
+
         self.settings = QMSettings(software = software,
                                    method = method,
                                    fileStore = fileStore,
@@ -124,21 +124,21 @@ class QMCalculator():
                                    onlyCyclics = onlyCyclics,
                                    maxRadicalNumber = maxRadicalNumber,
                                    )
-            
+
         self.database = ThermoLibrary(name='QM Thermo Library')
-        
+
     def setDefaultOutputDirectory(self, outputDirectory):
         """
         IF the fileStore or scratchDirectory are not already set, put them in here.
         """
-        
+
         if not self.settings.fileStore:
             self.settings.fileStore = os.path.abspath(os.path.join(outputDirectory, 'QMfiles'))
             logging.info("Setting the quantum mechanics fileStore to {0}".format(self.settings.fileStore))
         if not self.settings.scratchDirectory:
             self.settings.scratchDirectory = os.path.abspath(os.path.join(outputDirectory, 'QMscratch'))
             logging.info("Setting the quantum mechanics scratchDirectory to {0}".format(self.settings.scratchDirectory))
-    
+
     def initialize(self):
         """
         Do any startup tasks.
@@ -151,7 +151,7 @@ class QMCalculator():
         """
         self.settings.checkAllSet()
         self.checkPaths()
-        
+
     def checkPaths(self):
         """
         Check the paths in the settings are OK. Make folders as necessary.
@@ -171,7 +171,7 @@ class QMCalculator():
     def getThermoData(self, molecule):
         """
         Generate thermo data for the given :class:`Molecule` via a quantum mechanics calculation.
-        
+
         Ignores the settings onlyCyclics and maxRadicalNumber and does the calculation anyway if asked.
         (I.e. the code that chooses whether to call this method should consider those settings).
         """
@@ -204,11 +204,11 @@ class QMCalculator():
             raise Exception("Unknown QM software '{0}'".format(settings.software))
         thermo0 = qm_molecule_calculator.generateThermoData()
         return thermo0
-    
+
     def getKineticData(self, reaction, tsDatabase):
         """
         Generate thermo data for the given :class:`Molecule` via a quantum mechanics calculation.
-        
+
         Ignores the settings onlyCyclics and maxRadicalNumber and does the calculation anyway if asked.
         (I.e. the code that chooses whether to call this method should consider those settings).
         """
@@ -237,8 +237,6 @@ class QMCalculator():
                 raise Exception("Unknown QM method '{0}' for nwchem".format(self.settings.method))
         else:
             raise Exception("Unknown QM software '{0}'".format(self.settings.software))
-        
+
         kinetics0 = qm_reaction_calculator.generateKineticData()
         return kinetics0
-    
-        

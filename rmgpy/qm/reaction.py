@@ -535,7 +535,7 @@ class QMReaction:
         double-ended search methods.
         """
         optEst = False
-        optEst = self.optEstimate(labels)
+        # optEst = self.optEstimate(labels)
 
         successfulTS = self.optimizeTS(fromDoubleEnded=fromDoubleEnded, optEst=optEst)
         if not successfulTS:
@@ -669,7 +669,7 @@ class QMReaction:
 
         return check, notes
 
-    def generateTSGeometryQST3(self, neb=False):
+    def generateTSGeometryQST3(self):
 
         ''' Direct Guess Set-up '''
         self.settings.fileStore = self.fileStore
@@ -722,7 +722,8 @@ class QMReaction:
             return False, None, None, notes
 
         atoms = len(reactant.atoms)
-        distGeomAttempts = 15*(atoms-3) ''' number of conformers embedded from the bounds matrix '''
+        distGeomAttempts = 15*(atoms-3)
+        ''' number of conformers embedded from the bounds matrix '''
 
         #rdmol, minEid = self.reactantGeom.rd_embed(rRDMol, distGeomAttempts, bm=rBM, match=atomMatch)
         for atom in reactant.atoms:
@@ -738,7 +739,7 @@ class QMReaction:
 
         ''' don't re-embed the reactant or product, just copy geometry from TS
          then optimize at UFF, constrained with the appropriate bounds matrix '''
-        rRDMol, minEid = self.productGeom.optimize(rRDMol, boundsMatrix=rBM, atomMatch=atomMatch)
+        rRDMol, minEid = self.reactantGeom.optimize(rRDMol, boundsMatrix=rBM, atomMatch=atomMatch)
         self.reactantGeom.writeMolFile(rRDMol, self.reactantGeom.getRefinedMolFilePath(), minEid)
         pRDMol, minEid = self.productGeom.optimize(pRDMol, boundsMatrix=pBM, atomMatch=atomMatch)
         self.productGeom.writeMolFile(pRDMol, self.productGeom.getRefinedMolFilePath(), minEid)
