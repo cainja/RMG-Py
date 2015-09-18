@@ -506,7 +506,7 @@ class GaussianTS(QMReaction, Gaussian):
 
             assert os.path.exists(molfile)
             atomsymbols, atomcoords = self.reactantGeom.parseMOL(molfile)
-        
+
         output, atomCount = self.geomToString(atomsymbols, atomcoords, outputString=output)
 
         assert atomCount == len(self.reactantGeom.molecule.atoms)
@@ -829,7 +829,7 @@ class GaussianTS(QMReaction, Gaussian):
     def conductQST3(self, notes, tsAtomSymbols, tsAtomCoords, labels=None):
         self.createQST3InputFile(tsAtomSymbols, tsAtomCoords)
         qst3, logFilePath = self.runQST3()
-        shutil.copy(logFilePath, logFilePath.split('.')[0]+'.QST3.log')
+        shutil.move(logFilePath, logFilePath.split('.')[0]+'.QST3.log')
 
         return qst3, notes
 
@@ -981,7 +981,6 @@ class GaussianTS(QMReaction, Gaussian):
 
         failureKeys = [
                        '***** Convergence failure in GTrans *****',
-                       'Try using 3 structures as input for',
                        ]
 
         if not os.path.exists(self.outputFilePath):
