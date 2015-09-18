@@ -437,7 +437,7 @@ class GaussianTS(QMReaction, Gaussian):
                      "irc=(calcall,report=read) freq geom=allcheck guess=check nosymm",
                      "opt=(modredundant,MaxCycles=",
                      "opt=(qst2,calcfc,noeigentest,MaxCycles=",
-                     "opt=(qst3,calcfc,noeigentest,MaxCycles=",
+                     "opt=(qst3,calcfc,cartesian,noeigentest,MaxCycles=",
                      ]
 
     def inputFileKeywords(self, attempt, irc=False, modRed=None, qst2=None, qst3=None):
@@ -493,7 +493,7 @@ class GaussianTS(QMReaction, Gaussian):
             # xyzFile = self.getFilePath('.xyz')
             # assert os.path.exists(xyzFile)
             # atomsymbols, atomcoords = self.reactantGeom.parseXYZ(xyzFile)
-        elif fromInt or attempt > 2:
+        elif fromInt or attempt == 2:
             # Until checkpointing is fixed, rewrite the whole output
             assert os.path.exists(self.outputFilePath)
             atomsymbols, atomcoords = self.reactantGeom.parseLOG(self.outputFilePath)
@@ -506,7 +506,7 @@ class GaussianTS(QMReaction, Gaussian):
 
             assert os.path.exists(molfile)
             atomsymbols, atomcoords = self.reactantGeom.parseMOL(molfile)
-
+        
         output, atomCount = self.geomToString(atomsymbols, atomcoords, outputString=output)
 
         assert atomCount == len(self.reactantGeom.molecule.atoms)
