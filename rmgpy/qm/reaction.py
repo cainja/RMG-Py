@@ -22,6 +22,7 @@ try:
     import rdkit
     from rdkit import DistanceGeometry
     from rdkit.Chem.Pharm3D import EmbedLib
+    from rdkit.Geometry.rdGeometry import Point3D
 except ImportError:
     logging.info("To use transition state searches, you must correctly install rdkit")
 
@@ -669,7 +670,7 @@ class QMReaction:
 
         return check, notes
 
-    def generateTSGeometryQST3(self):
+    def generateTSGeometryQST3(self, rxnNum):
 
         ''' Direct Guess Set-up '''
         self.settings.fileStore = self.fileStore
@@ -703,13 +704,16 @@ class QMReaction:
         self.tsGeom.rd_embed(tsRDMol, distGeomAttempts, bm=tsBM, match=atomMatch)
         tsAtomSymbols, tsAtomCoords = self.tsGeom.parseMOL(self.tsGeom.getRefinedMolFilePath())
 
+        optEstFilePath = self.optEstimate(labels)
+        tsAtomSymbols, tsAtomCoords = self.tsGeom.parseLOG(optEstFilePath)
+
         ''' Double Ended Set-up '''
 
         rRDMol, rBM, self.reactantGeom = self.generateBoundsMatrix(reactant)
         pRDMol, pBM, self.productGeom = self.generateBoundsMatrix(product)
 
-        self.reactantGeom.uniqueID = 'reactant'
-        self.productGeom.uniqueID = 'product'
+        self.reactantGeom.uniqueID = 'reactant{0}'.format(rxnNum)
+        self.productGeom.uniqueID = 'product{0}'.format(rxnNum)
 
         labels, atomMatch = self.getLabels(reactant)
         rBM, pBM = self.editDoubMatrix(reactant, product, rBM, pBM, labels)
@@ -728,8 +732,12 @@ class QMReaction:
         #rdmol, minEid = self.reactantGeom.rd_embed(rRDMol, distGeomAttempts, bm=rBM, match=atomMatch)
         for atom in reactant.atoms:
             i = atom.sortingLabel
-            rRDMol.GetConformer(0).SetAtomPosition(i, tsRDMol.GetConformer(0).GetAtomPosition(i))
-            pRDMol.GetConformer(0).SetAtomPosition(i, tsRDMol.GetConformer(0).GetAtomPosition(i))
+            atCoords = tsAtomCoords[i]
+            atPos = Point3D(atCoords[0], atCoords[1], atCoords[2])
+            rRDMol.GetConformer(0).SetAtomPosition(i, deepcopy(atPos))
+            pRDMol.GetConformer(0).SetAtomPosition(i, deepcopy(atPos))
+            # rRDMol.GetConformer(0).SetAtomPosition(i, tsRDMol.GetConformer(0).GetAtomPosition(i))
+            # pRDMol.GetConformer(0).SetAtomPosition(i, tsRDMol.GetConformer(0).GetAtomPosition(i))
 
         #if not rdmol:
         #    notes = notes + "RDKit failed all attempts to embed"
@@ -746,6 +754,16 @@ class QMReaction:
 
         # if os.path.exists(self.outputFilePath):
         #     logging.info("File {0} already exists.".format(self.outputFilePath))
+        check, notes = self.prepDoubleEnded(labels, notes)
+        if check:
+            rLogFile = self.reactantGeom.getFilePath(self.outputFileExtension)+'.reactant.log'
+            pLogFile = self.productGeom.getFilePath(self.outputFileExtension)+'.product.log'
+            assert os.path.exists(rLogFile)
+            assert os.path.exists(pLogFile)
+            rAtomSymbols, rAtomCoords = self.reactantGeom.parseLOG(rLogFile)
+            pAtomSymbols, pAtomCoords = self.productGeom.parseLOG(pLogFile)
+        else:
+            return check, notes
         ''' I'm not sure why that should be a problem, but we used to do nothin in this case '''
         #     notes = notes + 'Already have an output, checking the IRC\n'
         #     rightTS = self.verifyIRCOutputFile()
@@ -755,7 +773,7 @@ class QMReaction:
         #     else:
         #         return False, notes#False, None, None, notes
 
-        check, notes = self.conductQST3(notes, tsAtomSymbols, tsAtomCoords, labels=labels)
+        check, notes = self.conductQST3(notes, tsAtomSymbols, tsAtomCoords, rAtomSymbols, rAtomCoords, pAtomSymbols, pAtomCoords, labels=labels)
         if check:
             # Optimize the TS
             check, notes =  self.tsSearch(notes, labels, fromDoubleEnded=True)

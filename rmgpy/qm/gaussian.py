@@ -240,7 +240,7 @@ class GaussianMol(QMMolecule, Gaussian):
         assert atomCount == len(self.molecule.atoms)
 
         output.append('')
-        self.writeInputFile(output, attempt, numProcShared=40, memory='10GB')
+        self.writeInputFile(output, attempt, numProcShared=40, memory='2GB')
 
     def generateQMData(self):
         """
@@ -425,16 +425,16 @@ class GaussianTS(QMReaction, Gaussian):
     methods for now.
     """
     keywords = [
-                "opt=(ts,calcfc,noeigentest) freq", # nosymm
-                "opt=(ts,calcfc,noeigentest,cartesian) freq", # nosymm geom=allcheck guess=check
-                "opt=(ts,calcfc,noeigentest) freq nosymm geom=allcheck guess=read",
-                "opt=(ts,calcfc,noeigentest,cartesian) freq nosymm geom=allcheck guess=check",
-                "opt=(ts,calcall,tight,noeigentest) freq int=ultrafine nosymm",
-                "opt=(ts,calcall,tight,noeigentest,cartesian) freq int=ultrafine geom=allcheck guess=check nosymm",
+                "opt=(ts,calcfc,noeigentest,maxcycles=200) freq", # nosymm
+                "opt=(ts,calcfc,noeigentest,cartesian,maxcycles=200) freq", # nosymm geom=allcheck guess=check
+                "opt=(ts,calcfc,noeigentest,maxcycles=200) freq nosymm geom=allcheck guess=read",
+                "opt=(ts,calcfc,noeigentest,cartesian,maxcycles=200) freq nosymm geom=allcheck guess=check",
+                "opt=(ts,calcall,tight,noeigentest,maxcycles=200) freq int=ultrafine nosymm",
+                "opt=(ts,calcall,tight,noeigentest,cartesian,maxcycles=200) freq int=ultrafine geom=allcheck guess=check nosymm",
                 ]
 
     otherKeywords = [
-                     "irc=(calcall,report=read) freq geom=allcheck guess=check nosymm",
+                     "irc=(calcall,report=read,maxcycles=200) geom=allcheck guess=check nosymm",
                      "opt=(modredundant,MaxCycles=",
                      "opt=(qst2,calcfc,noeigentest,MaxCycles=",
                      "opt=(qst3,calcfc,cartesian,noeigentest,MaxCycles=",
@@ -487,7 +487,10 @@ class GaussianTS(QMReaction, Gaussian):
         output.append("{charge}   {mult}".format(charge=0, mult=self.reactantGeom.molecule.multiplicity ))
 
         if fromDoubleEnded:
-            outputFilePath = self.outputFilePath
+            if os.path.exists(self.outputFilePath.split('.')[0]+'.QST3.log'):
+                outputFilePath = self.outputFilePath.split('.')[0]+'.QST3.log'
+            else:
+                outputFilePath = self.outputFilePath
             assert os.path.exists(outputFilePath)
             atomsymbols, atomcoords = self.reactantGeom.parseLOG(outputFilePath)
             # xyzFile = self.getFilePath('.xyz')
@@ -531,7 +534,7 @@ class GaussianTS(QMReaction, Gaussian):
             output, atomCount = self.geomToString(atomsymbols, atomcoords, outputString=output)
             assert atomCount == len(self.reactantGeom.molecule.atoms)
 
-        self.writeInputFile(output, top_keys=top_keys, numProcShared=40, memory='10GB', checkPoint=True, inputFilePath=self.ircInputFilePath)
+        self.writeInputFile(output, top_keys=top_keys, numProcShared=40, memory='2GB', checkPoint=True, inputFilePath=self.ircInputFilePath)
 
     def createGeomInputFile(self, freezeAtoms, otherGeom=False):
 
@@ -540,35 +543,26 @@ class GaussianTS(QMReaction, Gaussian):
         if otherGeom:
             output = [ '', self.productGeom.uniqueIDlong, '', "{charge}   {mult}".format(charge=0, mult=self.productGeom.molecule.multiplicity ) ]
             molfile = self.productGeom.getRefinedMolFilePath() # Now get the product geometry
-
-            atomCount = 0
-            with open(molfile) as molinput:
-                for line in molinput:
-                    match = atomline.match(line)
-                    if match:
-                        output.append("{0:8s} {1}".format(match.group(2), match.group(1)))
-                        atomCount += 1
             inputFilePath = self.productGeom.getFilePath(self.inputFileExtension)
-            bottom_keys = "{atom1} {atom3} F\n{atom1} {atom2} F\n".format(atom1=freezeAtoms[0] + 1, atom2=freezeAtoms[1] + 1, atom3=freezeAtoms[2] + 1)
         else:
             output = [ '', self.reactantGeom.uniqueIDlong, '', "{charge}   {mult}".format(charge=0, mult=self.reactantGeom.molecule.multiplicity ) ]
             molfile = self.reactantGeom.getRefinedMolFilePath() # Get the reactant geometry
-
-            atomCount = 0
-            with open(molfile) as molinput:
-                for line in molinput:
-                    match = atomline.match(line)
-                    if match:
-                        output.append("{0:8s} {1}".format(match.group(2), match.group(1)))
-                        atomCount += 1
             inputFilePath = self.reactantGeom.getFilePath(self.inputFileExtension)
-            bottom_keys = "{atom1} {atom3} F\n{atom2} {atom3} F\n".format(atom1=freezeAtoms[0] + 1, atom2=freezeAtoms[1] + 1, atom3=freezeAtoms[2] + 1)
+
+        atomCount = 0
+        with open(molfile) as molinput:
+            for line in molinput:
+                match = atomline.match(line)
+                if match:
+                    output.append("{0:8s} {1}".format(match.group(2), match.group(1)))
+                    atomCount += 1
+        bottom_keys = "{atom1} {atom3} F\n{atom2} {atom3} F\n".format(atom1=freezeAtoms[0] + 1, atom2=freezeAtoms[1] + 1, atom3=freezeAtoms[2] + 1)
 
         assert atomCount == len(self.reactantGeom.molecule.atoms)
 
         output.append('')
         top_keys = self.inputFileKeywords(0, modRed=atomCount)
-        self.writeInputFile(output, top_keys=top_keys, numProcShared=40, memory='10GB', bottomKeys=bottom_keys)
+        self.writeInputFile(output, top_keys=top_keys, numProcShared=40, memory='2GB', bottomKeys=bottom_keys, inputFilePath=inputFilePath)
 
     def createQST2InputFile(self):
         # For now we don't do this, until seg faults are fixed on Discovery.
@@ -593,17 +587,18 @@ class GaussianTS(QMReaction, Gaussian):
 
         output.append('')
         top_keys = self.inputFileKeywords(0, qst2=atomCount)
-        self.writeInputFile(output, top_keys=top_keys, numProcShared=40, memory='10GB')
+        self.writeInputFile(output, top_keys=top_keys, numProcShared=40, memory='2GB')
 
-    def createQST3InputFile(self, tsAtomSymbols, tsAtomCoords):
+    def createQST3InputFile(self, tsAtomSymbols, tsAtomCoords, rAtomSymbols, rAtomCoords, pAtomSymbols, pAtomCoords):
         # For now we don't do this, until seg faults are fixed on Discovery.
         # chk_file = '%chk=' + os.path.join(self.settings.fileStore, self.uniqueID) + '\n'
         output = ['', self.reactantGeom.uniqueID, '' ]
         output.append("{charge}   {mult}".format(charge=0, mult=(self.reactantGeom.molecule.getRadicalCount() + 1) ))
 
         # atomsymbols, atomcoords = self.reactantGeom.parseLOG(self.reactantGeom.getFilePath(self.outputFileExtension))
-        atomsymbols, atomcoords = self.reactantGeom.parseMOL(self.reactantGeom.getRefinedMolFilePath())
-        output, atomCount = self.geomToString(atomsymbols, atomcoords, outputString=output)
+        # atomsymbols, atomcoords = self.reactantGeom.parseMOL(self.reactantGeom.getRefinedMolFilePath())
+        # output, atomCount = self.geomToString(atomsymbols, atomcoords, outputString=output)
+        output, atomCount = self.geomToString(rAtomSymbols, rAtomCoords, outputString=output)
 
         assert atomCount == len(self.reactantGeom.molecule.atoms)
 
@@ -612,8 +607,9 @@ class GaussianTS(QMReaction, Gaussian):
         output.append('')
         output.append("{charge}   {mult}".format(charge=0, mult=(self.productGeom.molecule.getRadicalCount() + 1) ))
 
-        atomsymbols, atomcoords = self.productGeom.parseMOL(self.productGeom.getRefinedMolFilePath())
-        output, atomCount = self.geomToString(atomsymbols, atomcoords, outputString=output)
+        # atomsymbols, atomcoords = self.productGeom.parseMOL(self.productGeom.getRefinedMolFilePath())
+        # output, atomCount = self.geomToString(atomsymbols, atomcoords, outputString=output)
+        output, atomCount = self.geomToString(pAtomSymbols, pAtomCoords, outputString=output)
 
         assert atomCount == len(self.reactantGeom.molecule.atoms)
 
@@ -621,7 +617,6 @@ class GaussianTS(QMReaction, Gaussian):
         output.append('')
         output.append(self.tsGeom.uniqueIDlong)
         output.append('')
-        ''' We use the reactant multiplicity for now '''
         output.append("{charge}   {mult}".format(charge=0, mult=(self.tsGeom.molecule.getRadicalCount() + 1) ))
 
         output, atomCount = self.geomToString(tsAtomSymbols, tsAtomCoords, outputString=output)
@@ -645,17 +640,17 @@ class GaussianTS(QMReaction, Gaussian):
             attempt = 1
 
             output = ['', self.uniqueID, '' ]
-            output.append("{charge}   {mult}".format(charge=0, mult=self.reactantGeom.molecule.multiplicity ))
+            output.append("{charge}   {mult}".format(charge=0, mult=self.tsGeom.molecule.multiplicity ))
 
-            molfile = self.reactantGeom.getRefinedMolFilePath()
+            molfile = self.tsGeom.getRefinedMolFilePath()
             # molfile = self.reactantGeom.getCrudeMolFilePath()
 
             assert os.path.exists(molfile)
-            atomsymbols, atomcoords = self.reactantGeom.parseMOL(molfile)
+            atomsymbols, atomcoords = self.tsGeom.parseMOL(molfile)
 
             output, atomCount = self.geomToString(atomsymbols, atomcoords, outputString=output)
 
-            assert atomCount == len(self.reactantGeom.molecule.atoms)
+            assert atomCount == len(self.tsGeom.molecule.atoms)
 
             output.append('')
 
@@ -670,7 +665,7 @@ class GaussianTS(QMReaction, Gaussian):
             for combo in dist_combo_l:
                 bottomKeys = bottomKeys + '{0} {1} F\n'.format(combo[0] + 1, combo[1] + 1)
 
-            self.writeInputFile(output, attempt, top_keys=top_keys, numProcShared=40, memory='10GB', bottomKeys=bottomKeys, inputFilePath=inputFilePath)
+            self.writeInputFile(output, attempt, top_keys=top_keys, numProcShared=40, memory='2GB', bottomKeys=bottomKeys, inputFilePath=inputFilePath)
 
             outputFilePath = self.runDouble(inputFilePath)
 
@@ -781,15 +776,15 @@ class GaussianTS(QMReaction, Gaussian):
         if os.path.exists(self.getFilePath('.log.reactant.log')):
             rightReactant = self.checkGeometry(self.getFilePath('.log.reactant.log'), self.reactantGeom.molecule)
         else:
-            self.writeGeomInputFile(freezeAtoms=labels)
-            logFilePath = self.runDouble(self.inputFilePath)
+            self.createGeomInputFile(freezeAtoms=labels)
+            logFilePath = self.runDouble(self.reactantGeom.getFilePath(self.inputFileExtension))#self.inputFilePath)
             rightReactant = self.checkGeometry(logFilePath, self.reactantGeom.molecule)
             shutil.copy(logFilePath, logFilePath+'.reactant.log')
 
         if os.path.exists(self.productGeom.getFilePath('.log.product.log')):
             rightProduct = self.checkGeometry(self.productGeom.getFilePath('.log.product.log'), self.productGeom.molecule)
         else:
-            self.writeGeomInputFile(freezeAtoms=labels, otherGeom=True)
+            self.createGeomInputFile(freezeAtoms=labels, otherGeom=True)
             logFilePath = self.runDouble(self.productGeom.getFilePath(self.inputFileExtension))
             rightProduct = self.checkGeometry(logFilePath, self.productGeom.molecule)
             shutil.copy(logFilePath, logFilePath+'.product.log')
@@ -826,8 +821,8 @@ class GaussianTS(QMReaction, Gaussian):
                 notes = notes + 'QST3 needed, see {0}\n'.format(self.settings.fileStore)
                 return notes
 
-    def conductQST3(self, notes, tsAtomSymbols, tsAtomCoords, labels=None):
-        self.createQST3InputFile(tsAtomSymbols, tsAtomCoords)
+    def conductQST3(self, notes, tsAtomSymbols, tsAtomCoords, rAtomSymbols, rAtomCoords, pAtomSymbols, pAtomCoords, labels=None):
+        self.createQST3InputFile(tsAtomSymbols, tsAtomCoords, rAtomSymbols, rAtomCoords, pAtomSymbols, pAtomCoords)
         qst3, logFilePath = self.runQST3()
         shutil.move(logFilePath, logFilePath.split('.')[0]+'.QST3.log')
 
