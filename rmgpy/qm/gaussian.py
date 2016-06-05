@@ -193,7 +193,7 @@ class Gaussian:
             output = [numProc] + output
         if bottomKeys:
             output = output + [bottomKeys]
-        
+
         if 'gen' in top_keys:
             output = output + ['@/scratch/westgroup/mg3s.gbs', '\n']
 
@@ -521,7 +521,7 @@ class GaussianTS(QMReaction, Gaussian):
         atomsymbols, atomcoords = self.reactantGeom.parseLOG(self.outputFilePath)
         output, atomCount = self.geomToString(atomsymbols, atomcoords, outputString=output)
         assert atomCount == len(self.reactantGeom.molecule.atoms)
-        
+
         output.append('')
 
         self.writeInputFile(output, top_keys=top_keys, numProcShared=20, memory='5GB', checkPoint=False, inputFilePath=self.ircInputFilePath, scf=scf)
@@ -596,7 +596,7 @@ class GaussianTS(QMReaction, Gaussian):
 
         inputFilePath = self.getFilePath('Est{0}'.format(self.inputFileExtension))
         outputFilePath = self.getFilePath('Est{0}'.format(self.outputFileExtension))
-        
+
         if os.path.exists(self.outputFilePath):
             complete = self.checkComplete(outputFilePath)
             chkErr = self.checkKnownError(outputFilePath)
@@ -613,22 +613,22 @@ class GaussianTS(QMReaction, Gaussian):
 
             assert os.path.exists(molfile)
             atomsymbols, atomcoords = self.reactantGeom.parseMOL(molfile)
-            
+
             dist_combo_it = itertools.combinations(labels, 2)
             dist_combo_l = list(dist_combo_it)
             bottomKeys = ''
             for combo in dist_combo_l:
                 bottomKeys = bottomKeys + '{0} {1} F\n'.format(combo[0] + 1, combo[1] + 1)
-            
+
             if self.basisSet:
                 top_keys = '# {0}/{1} opt=(modredundant,loose,maxcycles={2}) int(grid=sg1)'.format(self.method, self.basisSet, max(50,len(atomsymbols)*8))
             else:
                 top_keys = '# {0} opt=(modredundant,loose,maxcycles={1}) int(grid=sg1)'.format(self.method, max(50,len(atomsymbols)*8))
-            
+
             while fixableError:
                 output = ['', self.uniqueID, '' ]
                 output.append("{charge}   {mult}".format(charge=0, mult=self.reactantGeom.molecule.multiplicity ))
-                
+
                 output, atomCount = self.geomToString(atomsymbols, atomcoords, outputString=output)
 
                 assert atomCount == len(self.reactantGeom.molecule.atoms)
@@ -638,22 +638,22 @@ class GaussianTS(QMReaction, Gaussian):
                 self.writeInputFile(output, attempt, top_keys=top_keys, numProcShared=20, memory='5GB', bottomKeys=bottomKeys, inputFilePath=inputFilePath, scf=scf)
 
                 outputFilePath = self.runDouble(inputFilePath)
-                
+
                 complete = self.checkComplete(outputFilePath)
                 chkErr = self.checkKnownError(outputFilePath)
-                
+
                 if complete and chkErr=='scf' and scf==False:
                     fixableError = True
                 elif not complete:
                     fixableError = True
                 else:
                     fixableError = False
-                
+
                 if chkErr=='scf' and scf==False:
                     scf = True
 
         return outputFilePath
-    
+
     def optRxnCenter(self, labels):
         """
         Writes and runs a ts optimization of the transition state estimate with everything frozen
@@ -662,7 +662,7 @@ class GaussianTS(QMReaction, Gaussian):
 
         inputFilePath = self.getFilePath('RxnC{0}'.format(self.inputFileExtension))
         outputFilePath = self.getFilePath('RxnC{0}'.format(self.outputFileExtension))
-        
+
         if os.path.exists(self.outputFilePath):
             complete = self.checkComplete(outputFilePath)
             chkErr = self.checkKnownError(outputFilePath)
@@ -676,33 +676,33 @@ class GaussianTS(QMReaction, Gaussian):
             readFilePath = self.getFilePath('Est{0}'.format(self.outputFileExtension))
             assert os.path.exists(readFilePath)
             atomsymbols, atomcoords = self.reactantGeom.parseLOG(readFilePath)
-            
+
             attempt = 1
-            
+
             if self.basisSet:
                 top_keys = '# {0}/{1} opt=(ts,modredundant,calcfc,noeigentest,maxcycles={2})'.format(self.method, self.basisSet, max(50,len(atomsymbols)*8))
             else:
                 top_keys = '# {0} opt=(ts,modredundant,calcfc,noeigentest,maxcycles={1})'.format(self.method, max(50,len(atomsymbols)*8))
-            
+
             # Get list of all distances
             dist_combo_it = itertools.combinations(range(len(atomsymbols)), 2)
             dist_combo_all = list(dist_combo_it)
-            
+
             # Get list of things we want unfrozen
             dist_combo_it = itertools.combinations(labels, 2)
             dist_combo_part = list(dist_combo_it)
-            
+
             # Get list of things we want frozen
             freezeList = [x for x in dist_combo_all if x not in dist_combo_part]
-            
+
             bottomKeys = ''
             for combo in freezeList:
                 bottomKeys = bottomKeys + '{0} {1} F\n'.format(combo[0] + 1, combo[1] + 1)
-            
+
             while fixableError:
                 output = ['', self.uniqueID, '' ]
                 output.append("{charge}   {mult}".format(charge=0, mult=self.reactantGeom.molecule.multiplicity ))
-                
+
                 output, atomCount = self.geomToString(atomsymbols, atomcoords, outputString=output)
 
                 assert atomCount == len(self.reactantGeom.molecule.atoms)
@@ -712,17 +712,17 @@ class GaussianTS(QMReaction, Gaussian):
                 self.writeInputFile(output, attempt, top_keys=top_keys, numProcShared=20, memory='5GB', bottomKeys=bottomKeys, inputFilePath=inputFilePath)
 
                 outputFilePath = self.runDouble(inputFilePath)
-                
+
                 complete = self.checkComplete(outputFilePath)
                 chkErr = self.checkKnownError(outputFilePath)
-                
+
                 if complete and chkErr=='scf' and scf==False:
                     fixableError = True
                 elif not complete:
                     fixableError = True
                 else:
                     fixableError = False
-                
+
                 if chkErr=='scf' and scf==False:
                     scf = True
 
@@ -867,19 +867,19 @@ class GaussianTS(QMReaction, Gaussian):
             if not qst2:
                 notes = notes + 'QST3 needed, see {0}\n'.format(self.settings.fileStore)
                 return False, notes
-    
+
     def checkKnownError(self, filePath):
         """
         Checks for errors in an output file.
-        
+
         Some errors can be treated by modifying the keywords, so this method identifies those errors
         so they can be addressed.
         """
-        known_failure_keys = { 
+        known_failure_keys = {
                 'Error in internal coordinate system.': False,
                 'Convergence failure -- run terminated.': False,
         }
-        
+
         with open(filePath) as outputFile:
             for line in outputFile:
                 line = line.strip()
@@ -888,44 +888,44 @@ class GaussianTS(QMReaction, Gaussian):
                     if element in line:
                         logging.error("Gaussian output file contains the following error: {0}".format(element) )
                         known_failure_keys[element] = True
-        
+
         if known_failure_keys['Error in internal coordinate system.']:
             return 'cartesian'
         elif known_failure_keys['Convergence failure -- run terminated.']:
             return 'scf'
         else:
             return None
-            
+
     def checkComplete(self, filePath):
         """
         Check that an output file is complete.
-        
+
         Incomplete files may exist from previous runs, due to the job being prematurely terminated.
         This checks to ensure the job has been completed.
         """
         convergenceFailure = False
         complete = False
-        
+
         f = open(filePath, 'r')
         allLines = f.readlines()
-        
+
         lastlines = allLines[-4:]
         finished_keys = {
             " Job cpu time": False,
             "termination": False,
         }
-        
+
         for line in lastlines:
             if line.startswith(' Job cpu time'):
                 finished_keys[" Job cpu time"] = True
             elif line.startswith(' Normal termination') or line.startswith(' Error termination'):
                 finished_keys["termination"] = True
-        
+
         if all(finished_keys.values()):
             complete = True
-        
+
         return complete
-    
+
     def verifyOutputFile(self):
         """
         Check's that an output file exists and was successful.
@@ -1146,7 +1146,7 @@ class GaussianTS(QMReaction, Gaussian):
             mol1.fromXYZ(atomnos, atomcoords[pth1End])
             mol2 = Molecule()
             mol2.fromXYZ(atomnos, atomcoords[-1])
-            
+
             testReaction = Reaction(
                                     reactants = mol1.split(),
                                     products = mol2.split(),

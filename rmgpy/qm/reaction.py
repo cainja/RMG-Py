@@ -505,7 +505,7 @@ class QMReaction:
         # if os.path.exists(self.outputFilePath):
         #     os.remove(checkpointFile)
             # complete = self.checkComplete(self.outputFilePath)
-            # 
+            #
             # if complete:
             #     converged, internalCoord = self.verifyOutputFile()
             # else:
@@ -514,10 +514,10 @@ class QMReaction:
             #     checkpointFile = os.path.join(self.settings.fileStore, self.uniqueID + ".chk")
             #     assert os.path.exists(checkpointFile)
             #     os.remove(checkpointFile) # Checkpoint file path
-        
+
         ordered_lbls = deepcopy(labels)
         ordered_lbls.sort()
-        
+
         if os.path.exists(self.outputFilePath):
             complete = self.checkComplete(self.outputFilePath)
             chkErr = self.checkKnownError(self.outputFilePath)
@@ -525,7 +525,7 @@ class QMReaction:
                 os.remove(self.outputFilePath)
             else:
                 converged = self.verifyOutputFile()
-            
+
         if not os.path.exists(self.outputFilePath):
             optEst = self.optEstimate(labels)
             optRC = self.optRxnCenter(ordered_lbls)
@@ -545,10 +545,10 @@ class QMReaction:
                 if complete and chkErr==None:
                     fixableError=False
                     shutil.copy(self.outputFilePath, self.outputFilePath+'.TS1.log')
-                    
+
                 shutil.copy(self.outputFilePath, self.outputFilePath+'.trial{0}.log'.format(trialRun))
                 trialRun += 1
-            
+
                 # if os.path.exists(self.ircOutputFilePath):# Remove it
                 #     os.remove(self.ircOutputFilePath)
 
@@ -558,7 +558,7 @@ class QMReaction:
         #     self.createInputFile(2)
         #     converged = self.run()
         #     shutil.copy(self.outputFilePath, self.outputFilePath+'.TS2.log')
-        #     
+        #
         # # if not os.path.exists(self.outputFilePath):
         # #     optEst = self.getFilePath('Est{0}'.format(self.outputFileExtension))
         # #     optRC = self.getFilePath('RxnC{0}'.format(self.outputFileExtension))
@@ -570,7 +570,7 @@ class QMReaction:
         # #     self.createInputFile(1, fromDoubleEnded=fromDoubleEnded, optEst=optRC)
         # #     converged, internalCoord = self.run()
         # #     shutil.copy(self.outputFilePath, self.outputFilePath+'.TS1.log')
-        # # 
+        # #
         # #     if internalCoord and not converged:
         # #         notes = 'Internal coordinate error, trying cartesian\n'
         # #         print "Optimizing TS in cartesian"
@@ -579,7 +579,7 @@ class QMReaction:
         # #         shutil.copy(self.outputFilePath, self.outputFilePath+'.TS2.log')
         # # else:
         # #     converged = self.verifyOutputFile()
-        # 
+        #
         # if not converged:
         #     # Check for convergence failures
         #     complete, convergenceFailure = self.checkComplete(self.outputFilePath)
@@ -607,7 +607,7 @@ class QMReaction:
                     scf=True
             else:
                 rightTS = self.verifyIRCOutputFile()
-                
+
         if not os.path.exists(self.ircOutputFilePath):
             fixableError=True
             scf = False
@@ -619,15 +619,15 @@ class QMReaction:
                 chkErr = self.checkKnownError(self.ircOutputFilePath)
                 if chkErr=='scf' and scf==False:
                     scf = True
-                    
+
                 if chkErr!='scf':
                     fixableError=False
-                    
+
                 shutil.copy(self.ircOutputFilePath, self.ircOutputFilePath+'.trial{0}.log'.format(trialRun))
                 trialRun += 1
-                    
+
         return rightTS
-    
+
     def checkSQL(self, path_to_db):
         """
         Check the SQL database for a transition state. This should be run before
@@ -637,9 +637,9 @@ class QMReaction:
         with con:
             cur = con.cursor()
             cur.execute("SELECT * FROM TSData")
-            
+
             rows = cur.fetchall()
-            
+
             for row in rows:
                 print row
 
@@ -651,7 +651,7 @@ class QMReaction:
         """
         # Check SQL database for transition state
         # self.checkSQL('/scratch/westgroup')
-        
+
         successfulTS = self.optimizeTS(labels, fromDoubleEnded=fromDoubleEnded)
         if not successfulTS:
             notes = 'TS not converged\n'
@@ -665,7 +665,7 @@ class QMReaction:
             notes = 'Success\n'
 
         return validTS, notes
-            
+
     def generateTSGeometryDirectGuess(self):
         """
         Generate a transition state geometry, using the direct guess (group additive) method.
@@ -679,7 +679,7 @@ class QMReaction:
             """
             diff = (coordinates1.coords - coordinates2.coords)
             return math.sqrt(sum(diff * diff))
-            
+
         self.settings.fileStore = self.fileStore
         self.settings.scratchDirectory = self.scratchDirectory
         split_fileStore = self.fileStore.split(self.uniqueID)
@@ -695,7 +695,7 @@ class QMReaction:
         self.reactantGeom.uniqueID = self.uniqueID
 
         labels, atomMatch = self.getLabels(reactant)
-        
+
         if os.path.exists(os.path.join(self.fileStore, self.uniqueID + '.data')):
             estFilePath = self.getFilePath('Est{0}'.format(self.outputFileExtension))
             rcFilePath = self.getFilePath('RxnC{0}'.format(self.outputFileExtension))
@@ -705,7 +705,7 @@ class QMReaction:
                 cclib_data = parser.parse()
                 atomNums = cclib_data.atomnos
                 atomCoords = cclib_data.atomcoords[-1]
-                
+
                 atom1 = Atom(element=getElement(int(atomNums[labels[0]])), coords=atomCoords[labels[0]])
                 atom2 = Atom(element=getElement(int(atomNums[labels[1]])), coords=atomCoords[labels[1]])
                 atom3 = Atom(element=getElement(int(atomNums[labels[2]])), coords=atomCoords[labels[2]])
@@ -713,7 +713,7 @@ class QMReaction:
                 at12 = getDistance(atom1, atom2)
                 at23 = getDistance(atom2, atom3)
                 at13 = getDistance(atom1, atom3)
-                
+
                 with open(os.path.join(self.fileStore, 'fzEstDists.txt'), 'w') as distFile:
                     distFile.write('d12: {0:.6f}, d13: {1:.6f}, d23: {2:.6f}'.format(at12, at13, at23))
             if os.path.exists(rcFilePath):
@@ -722,7 +722,7 @@ class QMReaction:
                 cclib_data = parser.parse()
                 atomNums = cclib_data.atomnos
                 atomCoords = cclib_data.atomcoords[-1]
-                
+
                 atom1 = Atom(element=getElement(int(atomNums[labels[0]])), coords=atomCoords[labels[0]])
                 atom2 = Atom(element=getElement(int(atomNums[labels[1]])), coords=atomCoords[labels[1]])
                 atom3 = Atom(element=getElement(int(atomNums[labels[2]])), coords=atomCoords[labels[2]])
@@ -730,7 +730,7 @@ class QMReaction:
                 at12 = getDistance(atom1, atom2)
                 at23 = getDistance(atom2, atom3)
                 at13 = getDistance(atom1, atom3)
-                
+
                 with open(os.path.join(self.fileStore, 'rcDists.txt'), 'w') as distFile:
                     distFile.write('d12: {0:.6f}, d13: {1:.6f}, d23: {2:.6f}'.format(at12, at13, at23))
             parser = cclib.parser.Gaussian(self.outputFilePath)
@@ -738,7 +738,7 @@ class QMReaction:
             cclib_data = parser.parse()
             atomNums = cclib_data.atomnos
             atomCoords = cclib_data.atomcoords[-1]
-            
+
             atom1 = Atom(element=getElement(int(atomNums[labels[0]])), coords=atomCoords[labels[0]])
             atom2 = Atom(element=getElement(int(atomNums[labels[1]])), coords=atomCoords[labels[1]])
             atom3 = Atom(element=getElement(int(atomNums[labels[2]])), coords=atomCoords[labels[2]])
@@ -746,11 +746,11 @@ class QMReaction:
             at12 = getDistance(atom1, atom2)
             at23 = getDistance(atom2, atom3)
             at13 = getDistance(atom1, atom3)
-            
+
             with open(os.path.join(self.fileStore, 'optDists.txt'), 'w') as distFile:
                 distFile.write('d12: {0:.6f}, d13: {1:.6f}, d23: {2:.6f}'.format(at12, at13, at23))
             return True, "Already done!"
-        
+
         tsBM = self.editMatrix(reactant, tsBM, labels)
         atoms = len(reactant.atoms)
         if atoms>3:
@@ -783,7 +783,7 @@ class QMReaction:
             distFile.write('d12: {0:.6f}, d13: {1:.6f}, d23: {2:.6f}'.format(d12, d13, d23))
 
         check, notes =  self.tsSearch(notes, labels)
-        
+
         if check:
             estFilePath = self.getFilePath('Est{0}'.format(self.outputFileExtension))
             rcFilePath = self.getFilePath('RxnC{0}'.format(self.outputFileExtension))
@@ -793,7 +793,7 @@ class QMReaction:
                 cclib_data = parser.parse()
                 atomNums = cclib_data.atomnos
                 atomCoords = cclib_data.atomcoords[-1]
-                
+
                 atom1 = Atom(element=getElement(int(atomNums[labels[0]])), coords=atomCoords[labels[0]])
                 atom2 = Atom(element=getElement(int(atomNums[labels[1]])), coords=atomCoords[labels[1]])
                 atom3 = Atom(element=getElement(int(atomNums[labels[2]])), coords=atomCoords[labels[2]])
@@ -801,7 +801,7 @@ class QMReaction:
                 at12 = getDistance(atom1, atom2)
                 at23 = getDistance(atom2, atom3)
                 at13 = getDistance(atom1, atom3)
-                
+
                 with open(os.path.join(self.fileStore, 'fzEstDists.txt'), 'w') as distFile:
                     distFile.write('d12: {0:.6f}, d13: {1:.6f}, d23: {2:.6f}'.format(at12, at13, at23))
             if os.path.exists(rcFilePath):
@@ -810,7 +810,7 @@ class QMReaction:
                 cclib_data = parser.parse()
                 atomNums = cclib_data.atomnos
                 atomCoords = cclib_data.atomcoords[-1]
-                
+
                 atom1 = Atom(element=getElement(int(atomNums[labels[0]])), coords=atomCoords[labels[0]])
                 atom2 = Atom(element=getElement(int(atomNums[labels[1]])), coords=atomCoords[labels[1]])
                 atom3 = Atom(element=getElement(int(atomNums[labels[2]])), coords=atomCoords[labels[2]])
@@ -818,7 +818,7 @@ class QMReaction:
                 at12 = getDistance(atom1, atom2)
                 at23 = getDistance(atom2, atom3)
                 at13 = getDistance(atom1, atom3)
-                
+
                 with open(os.path.join(self.fileStore, 'rcDists.txt'), 'w') as distFile:
                     distFile.write('d12: {0:.6f}, d13: {1:.6f}, d23: {2:.6f}'.format(at12, at13, at23))
             parser = cclib.parser.Gaussian(self.outputFilePath)
@@ -826,7 +826,7 @@ class QMReaction:
             cclib_data = parser.parse()
             atomNums = cclib_data.atomnos
             atomCoords = cclib_data.atomcoords[-1]
-            
+
             atom1 = Atom(element=getElement(int(atomNums[labels[0]])), coords=atomCoords[labels[0]])
             atom2 = Atom(element=getElement(int(atomNums[labels[1]])), coords=atomCoords[labels[1]])
             atom3 = Atom(element=getElement(int(atomNums[labels[2]])), coords=atomCoords[labels[2]])
@@ -834,7 +834,7 @@ class QMReaction:
             at12 = getDistance(atom1, atom2)
             at23 = getDistance(atom2, atom3)
             at13 = getDistance(atom1, atom3)
-            
+
             with open(os.path.join(self.fileStore, 'optDists.txt'), 'w') as distFile:
                 distFile.write('d12: {0:.6f}, d13: {1:.6f}, d23: {2:.6f}'.format(at12, at13, at23))
 
@@ -1044,7 +1044,7 @@ class QMReaction:
 
         if not fileStore.startswith('/'):
             fileStore = os.path.abspath(fileStore)
-            
+
         speciesList = [] # Check if species path already specified. If so, DON'T put it again.
         for reactant in reactants:
             if reactant.uniqueID not in speciesList:
@@ -1153,24 +1153,24 @@ class QMReaction:
             for atom in molecule.atoms:
                 allAtoms.append(atom.symbol)
 
-        self.writeCanThermStatMech(allAtoms, {}, multiplicity, self.outputFilePath)
-        canThermFilePath = os.path.join(self.fileStore, 'input.py')
-        self.writeCanThermInput(reactants, products, canThermFilePath, fileStore, scratchDirectory)
-        canThermJob = CanTherm()
-        canThermJob.outputDirectory = self.fileStore
-        canThermJob.inputFile = canThermFilePath
-        canThermJob.plot = False
-        try:
-            canThermJob.execute()
-    	    jobResult = "Successful kinetics calculation in CanTherm."
-    	    for job in canThermJob.jobList:
-    	        if isinstance(job, KineticsJob):
+        #self.writeCanThermStatMech(allAtoms, {}, multiplicity, self.outputFilePath)
+        #canThermFilePath = os.path.join(self.fileStore, 'input.py')
+        #self.writeCanThermInput(reactants, products, canThermFilePath, fileStore, scratchDirectory)
+        #canThermJob = CanTherm()
+        #canThermJob.outputDirectory = self.fileStore
+        #canThermJob.inputFile = canThermFilePath
+        #canThermJob.plot = False
+        #try:
+        #    canThermJob.execute()
+    	#    jobResult = "Successful kinetics calculation in CanTherm."
+    	#    for job in canThermJob.jobList:
+    	#        if isinstance(job, KineticsJob):
     		    # Return the reaction with the kinetics.
-    	            return job.reaction
-    	except ValueError, e:
-    	    jobResult = e
+    	#            return job.reaction
+    	#except ValueError, e:
+    	#    jobResult = e
 
-    	logging.info(jobResult)
+    	#logging.info(jobResult)
         return self.reaction
         #
         # if len(reactants)==len(self.reaction.reactants) and len(products)==len(self.reaction.products):
